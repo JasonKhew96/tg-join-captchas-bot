@@ -1,0 +1,23 @@
+bot_token: 2147483647:c588c0a459f4ccc6f3dd26518d24707a
+ban_time: 300
+chat_id: -1002147483647
+messages:
+  ask_question: "Please answer below question:"
+  correct_answer: All answer correct, you are approved
+  invalid_button: Invalid Button, please try to join again
+  wrong_answer: Wrong answer, please try to join again
+questions:
+  - answer: This is answer
+    choices:
+      - Wrong answer
+      - Definely Wrong
+      - Also Wrong
+      - Not Right
+    question: Which is the correct answer?
+  - answer: This is answer
+    choices:
+      - Wrong answer
+      - Definely Wrong
+      - Also Wrong
+      - Not Right
+    question: Which is the correct answer again?
