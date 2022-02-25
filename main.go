@@ -13,6 +13,7 @@ import (
 )
 
 type status struct {
+	startTime     int64
 	questionIndex int
 }
 
@@ -20,7 +21,6 @@ type Bot struct {
 	config    *Config
 	b         *gotgbot.Bot
 	logger    *log.Logger
-	startTime int64
 	statusMap map[int64]*status
 }
 
@@ -37,7 +37,6 @@ func NewBot(config *Config) (*Bot, error) {
 		config:    config,
 		b:         b,
 		logger:    logger,
-		startTime: time.Now().Unix(),
 		statusMap: make(map[int64]*status),
 	}
 
@@ -113,11 +112,13 @@ func (bot *Bot) handleNewChatJoinRequest(b *gotgbot.Bot, ctx *ext.Context) error
 	choices := append([]string{question.Answer}, question.Choices...)
 	rand.Shuffle(len(choices), func(i, j int) { choices[i], choices[j] = choices[j], choices[i] })
 
+	startTime := time.Now().Unix()
+
 	var inlineKeyboardButtonsArr [][]gotgbot.InlineKeyboardButton
 	for _, choice := range choices {
 		inlineKeyboardButtonsArr = append(inlineKeyboardButtonsArr, []gotgbot.InlineKeyboardButton{{
 			Text:         choice,
-			CallbackData: sha256sum(fmt.Sprintf("%s%d", choice, bot.startTime)),
+			CallbackData: sha256sum(fmt.Sprintf("%s%d", choice, startTime)),
 		}})
 	}
 
@@ -131,6 +132,7 @@ func (bot *Bot) handleNewChatJoinRequest(b *gotgbot.Bot, ctx *ext.Context) error
 	}
 
 	bot.statusMap[ctx.EffectiveUser.Id] = &status{
+		startTime:     startTime,
 		questionIndex: 0,
 	}
 
@@ -153,7 +155,7 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 		return nil
 	}
 
-	answer := sha256sum(fmt.Sprintf("%s%d", bot.config.Questions[status.questionIndex].Answer, bot.startTime))
+	answer := sha256sum(fmt.Sprintf("%s%d", bot.config.Questions[status.questionIndex].Answer, status.startTime))
 	if answer != ctx.CallbackQuery.Data {
 		bot.logger.Println("wrong answer", ctx.EffectiveUser.Id)
 		if _, _, err := b.EditMessageText(bot.config.Messages.WrongAnswer, &gotgbot.EditMessageTextOpts{
@@ -194,7 +196,7 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 	for _, choice := range choices {
 		inlineKeyboardButtonsArr = append(inlineKeyboardButtonsArr, []gotgbot.InlineKeyboardButton{{
 			Text:         choice,
-			CallbackData: sha256sum(fmt.Sprintf("%s%d", choice, bot.startTime)),
+			CallbackData: sha256sum(fmt.Sprintf("%s%d", choice, status.startTime)),
 		}})
 	}
 
