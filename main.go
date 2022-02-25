@@ -81,7 +81,6 @@ func main() {
 	dispatcher.AddHandler(handlers.NewChatJoinRequest(func(cjr *gotgbot.ChatJoinRequest) bool {
 		return cjr.Chat.Id == bot.config.ChatID
 	}, bot.handleNewChatJoinRequest))
-	// dispatcher.AddHandler(handlers.NewCommand("test", bot.handleNewChatJoinRequest))
 	dispatcher.AddHandler(handlers.NewCallback(bot.filterCallbackQuery, bot.handleCallbackQuery))
 
 	err = updater.StartPolling(bot.b, &ext.PollingOpts{
@@ -237,7 +236,6 @@ func (bot *Bot) deleteStatusAndDecline(userId int64) {
 			bot.logger.Println("failed to decline chat join request:", err)
 			return
 		}
-		bot.logger.Println(time.Now().Unix(), bot.config.BanTime)
 		if _, err := bot.b.BanChatMember(bot.config.ChatID, userId, &gotgbot.BanChatMemberOpts{
 			UntilDate: time.Now().Unix() + bot.config.BanTime,
 		}); err != nil {
