@@ -85,17 +85,11 @@ func main() {
 	dispatcher.AddHandler(handlers.NewCallback(bot.filterCallbackQuery, bot.handleCallbackQuery))
 
 	err = updater.StartPolling(bot.b, &ext.PollingOpts{
-		DropPendingUpdates: true,
-		Timeout:            0,
+		DropPendingUpdates: false,
+		Timeout:            16 * time.Second,
 		GetUpdatesOpts: gotgbot.GetUpdatesOpts{
-			AllowedUpdates: []string{
-				// "message",
-				// "edited_message",
-				"callback_query",
-				// "my_chat_member",
-				// "chat_member",
-				"chat_join_request",
-			},
+			Timeout:        15,
+			AllowedUpdates: []string{"message", "callback_query", "chat_join_request"},
 		},
 	})
 	if err != nil {
