@@ -5,6 +5,7 @@ messages:
   ask_question: "Please answer below question:"
   correct_answer: All answer correct, you are approved
   invalid_button: Invalid Button, please try to join again
+  timeout_error: Timeout, please try to join again
   wrong_answer: Wrong answer, please try to join again
 questions:
   - answer: This is answer
@@ -21,3 +22,4 @@ questions:
       - Also Wrong
       - Not Right
     question: Which is the correct answer again?
+timeout: 300
