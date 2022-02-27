@@ -15,6 +15,7 @@ import (
 type status struct {
 	startTime     int64
 	questionIndex int
+	timer         *time.Timer
 }
 
 type Bot struct {
@@ -122,18 +123,34 @@ func (bot *Bot) handleNewChatJoinRequest(b *gotgbot.Bot, ctx *ext.Context) error
 		}})
 	}
 
-	if _, err := b.SendMessage(ctx.EffectiveUser.Id, fmt.Sprintf("%s\n\n%02d. %s", bot.config.Messages.AskQuestion, 1, question.Question), &gotgbot.SendMessageOpts{
+	msg, err := b.SendMessage(ctx.EffectiveUser.Id, fmt.Sprintf("%s\n\n%02d. %s", bot.config.Messages.AskQuestion, 1, question.Question), &gotgbot.SendMessageOpts{
 		ProtectContent: true,
 		ReplyMarkup: gotgbot.InlineKeyboardMarkup{
 			InlineKeyboard: inlineKeyboardButtonsArr,
 		},
-	}); err != nil {
+	})
+	if err != nil {
 		return err
+	}
+
+	timeoutFunc := func(userId, msgId int64) func() {
+		return func() {
+			bot.logger.Println("timeout for user", userId, "message", msgId)
+			if _, ok, err := b.EditMessageText(bot.config.Messages.TimeoutError, &gotgbot.EditMessageTextOpts{
+				ChatId:      userId,
+				MessageId:   msgId,
+				ReplyMarkup: gotgbot.InlineKeyboardMarkup{},
+			}); err != nil || !ok {
+				bot.logger.Println("failed to edit message:", ok, err)
+			}
+			bot.deleteStatusAndDecline(userId)
+		}
 	}
 
 	bot.statusMap[ctx.EffectiveUser.Id] = &status{
 		startTime:     startTime,
 		questionIndex: 0,
+		timer:         time.AfterFunc(time.Duration(bot.config.Timeout)*time.Second, timeoutFunc(ctx.EffectiveUser.Id, msg.MessageId)),
 	}
 
 	return nil
@@ -144,12 +161,10 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 	if !ok {
 		bot.logger.Println("no status found for user", ctx.EffectiveUser.Id)
 		if _, _, err := b.EditMessageText(bot.config.Messages.InvalidButton, &gotgbot.EditMessageTextOpts{
-			ChatId:          ctx.EffectiveChat.Id,
-			MessageId:       ctx.CallbackQuery.Message.MessageId,
-			InlineMessageId: ctx.CallbackQuery.InlineMessageId,
-			ReplyMarkup:     gotgbot.InlineKeyboardMarkup{},
+			ChatId:      ctx.EffectiveChat.Id,
+			MessageId:   ctx.CallbackQuery.Message.MessageId,
+			ReplyMarkup: gotgbot.InlineKeyboardMarkup{},
 		}); err != nil {
-			bot.deleteStatusAndDecline(ctx.EffectiveUser.Id)
 			return err
 		}
 		return nil
@@ -164,9 +179,11 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 			InlineMessageId: ctx.CallbackQuery.InlineMessageId,
 			ReplyMarkup:     gotgbot.InlineKeyboardMarkup{},
 		}); err != nil {
+			bot.stopStatusTimer(status)
 			bot.deleteStatusAndDecline(ctx.EffectiveUser.Id)
 			return err
 		}
+		bot.stopStatusTimer(status)
 		bot.deleteStatusAndDecline(ctx.EffectiveUser.Id)
 		return nil
 	}
@@ -179,9 +196,11 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 			InlineMessageId: ctx.CallbackQuery.InlineMessageId,
 			ReplyMarkup:     gotgbot.InlineKeyboardMarkup{},
 		}); err != nil {
+			bot.stopStatusTimer(status)
 			bot.deleteStatusAndDecline(ctx.EffectiveUser.Id)
 			return err
 		}
+		bot.stopStatusTimer(status)
 		bot.deleteStatusAndApprove(ctx.EffectiveUser.Id)
 		return nil
 	}
@@ -208,6 +227,7 @@ func (bot *Bot) handleCallbackQuery(b *gotgbot.Bot, ctx *ext.Context) error {
 			InlineKeyboard: inlineKeyboardButtonsArr,
 		},
 	}); err != nil {
+		bot.stopStatusTimer(status)
 		bot.deleteStatusAndDecline(ctx.EffectiveUser.Id)
 		return err
 	}
@@ -225,7 +245,6 @@ func (bot *Bot) deleteStatusAndApprove(userId int64) {
 		delete(bot.statusMap, userId)
 		if _, err := bot.b.ApproveChatJoinRequest(bot.config.ChatID, userId); err != nil {
 			bot.logger.Println("failed to approve chat join request:", err)
-			return
 		}
 	}
 }
@@ -236,13 +255,17 @@ func (bot *Bot) deleteStatusAndDecline(userId int64) {
 		delete(bot.statusMap, userId)
 		if _, err := bot.b.DeclineChatJoinRequest(bot.config.ChatID, userId); err != nil {
 			bot.logger.Println("failed to decline chat join request:", err)
-			return
 		}
 		if _, err := bot.b.BanChatMember(bot.config.ChatID, userId, &gotgbot.BanChatMemberOpts{
 			UntilDate: time.Now().Unix() + bot.config.BanTime,
 		}); err != nil {
 			bot.logger.Println("failed to ban user:", err)
-			return
 		}
+	}
+}
+
+func (bot *Bot) stopStatusTimer(status *status) {
+	if !status.timer.Stop() {
+		<-status.timer.C
 	}
 }

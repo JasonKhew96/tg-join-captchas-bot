@@ -14,6 +14,7 @@ type Config struct {
 		AskQuestion   string `yaml:"ask_question"`
 		CorrectAnswer string `yaml:"correct_answer"`
 		InvalidButton string `yaml:"invalid_button"`
+		TimeoutError  string `yaml:"timeout_error"`
 		WrongAnswer   string `yaml:"wrong_answer"`
 	} `yaml:"messages"`
 	Questions []struct {
@@ -21,6 +22,7 @@ type Config struct {
 		Answer   string   `yaml:"answer"`
 		Choices  []string `yaml:"choices"`
 	} `yaml:"questions"`
+	Timeout int `yaml:"timeout"`
 }
 
 func parseConfig() (*Config, error) {
