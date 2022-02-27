@@ -88,7 +88,7 @@ func main() {
 		Timeout:            16 * time.Second,
 		GetUpdatesOpts: gotgbot.GetUpdatesOpts{
 			Timeout:        15,
-			AllowedUpdates: []string{"message", "callback_query", "chat_join_request"},
+			AllowedUpdates: []string{"callback_query", "chat_join_request"},
 		},
 	})
 	if err != nil {
