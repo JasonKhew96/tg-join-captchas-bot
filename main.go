@@ -106,7 +106,7 @@ func sha256sum(text string) string {
 }
 
 func (bot *Bot) handleNewChatJoinRequest(b *gotgbot.Bot, ctx *ext.Context) error {
-	bot.logger.Println(ctx.EffectiveUser.FirstName, ctx.EffectiveUser.LastName, ctx.EffectiveChat.Id)
+	bot.logger.Println(ctx.EffectiveUser.FirstName, ctx.EffectiveUser.LastName, ctx.EffectiveUser.Id, ctx.EffectiveChat.Id)
 
 	question := bot.config.Questions[0]
 
