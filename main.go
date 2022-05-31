@@ -85,7 +85,6 @@ func main() {
 
 	err = updater.StartPolling(bot.b, &ext.PollingOpts{
 		DropPendingUpdates: false,
-		Timeout:            16 * time.Second,
 		GetUpdatesOpts: gotgbot.GetUpdatesOpts{
 			Timeout:        15,
 			AllowedUpdates: []string{"callback_query", "chat_join_request"},
@@ -243,7 +242,7 @@ func (bot *Bot) deleteStatusAndApprove(userId int64) {
 	bot.logger.Println("Approve", userId)
 	if _, ok := bot.statusMap[userId]; ok {
 		delete(bot.statusMap, userId)
-		if _, err := bot.b.ApproveChatJoinRequest(bot.config.ChatID, userId); err != nil {
+		if _, err := bot.b.ApproveChatJoinRequest(bot.config.ChatID, userId, &gotgbot.ApproveChatJoinRequestOpts{}); err != nil {
 			bot.logger.Println("failed to approve chat join request:", err)
 		}
 	}
@@ -253,7 +252,7 @@ func (bot *Bot) deleteStatusAndDecline(userId int64) {
 	bot.logger.Println("Decline", userId)
 	if _, ok := bot.statusMap[userId]; ok {
 		delete(bot.statusMap, userId)
-		if _, err := bot.b.DeclineChatJoinRequest(bot.config.ChatID, userId); err != nil {
+		if _, err := bot.b.DeclineChatJoinRequest(bot.config.ChatID, userId, &gotgbot.DeclineChatJoinRequestOpts{}); err != nil {
 			bot.logger.Println("failed to decline chat join request:", err)
 		}
 		if _, err := bot.b.BanChatMember(bot.config.ChatID, userId, &gotgbot.BanChatMemberOpts{
