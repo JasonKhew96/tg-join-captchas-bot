@@ -86,7 +86,6 @@ func main() {
 	err = updater.StartPolling(bot.b, &ext.PollingOpts{
 		DropPendingUpdates: false,
 		GetUpdatesOpts: gotgbot.GetUpdatesOpts{
-			Timeout:        15,
 			AllowedUpdates: []string{"callback_query", "chat_join_request"},
 		},
 	})
